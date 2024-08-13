@@ -246,6 +246,22 @@ __device__ void make_identity_matrix(
   __syncwarp();
 }
 
+template <int M, int N, int K, class T>
+__device__ void make_identity_matrix(
+        nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, M, N, K, T> &frag) {
+    mtk::wmma::fill_zero(frag);
+    mtk::wmma::add_eye(frag, mtk::wmma::detail::common::cast<T>(1.0f));
+    __syncwarp();
+}
+
+template <int M, int N, int K, class T, class FT>
+__device__ void
+add_eye(nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, M, N, K, T> &frag,
+        const FT a) {
+    detail_namespace::add_eye(frag, a);
+    __syncwarp();
+}
+
 // ------------------------------
 // Loading direct product vector functions
 // ------------------------------

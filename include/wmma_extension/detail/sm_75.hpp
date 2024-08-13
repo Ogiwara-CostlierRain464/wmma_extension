@@ -470,6 +470,49 @@ __device__ inline void make_identity_matrix(
   }
 }
 
+// for myself
+
+template <class T, class M>
+__device__ inline void make_identity_matrix(
+        nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, 16, 16, 16, T, M> &frag) {
+    const unsigned lane_id = mtk::wmma::detail::common::get_lane_id();
+    if (std::is_same<T, float>::value) {
+        int4 *const i4 = reinterpret_cast<int4 *>(frag.x);
+        i4[0] = make_int4(0, 0, 0, 0);
+        i4[1] = make_int4(0, 0, 0, 0);
+    } else {
+        int4 *const i4 = reinterpret_cast<int4 *>(frag.x);
+        i4[0] = make_int4(0, 0, 0, 0);
+    }
+
+    const unsigned mod9 = lane_id % 9;
+
+    unsigned index_offset = mod9 >> 2;
+    bool set_flag = mod9 == 0 || mod9 == 4;
+
+    if (set_flag) {
+        frag.x[index_offset] = frag.x[index_offset + 6] = common::cast<T>(1.0f);
+    }
+}
+
+template <class T, class M>
+__device__ inline void
+add_eye(nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, 16, 16, 16, T, M> &frag,
+        const T alpha) {
+    const unsigned lane_id = mtk::wmma::detail::common::get_lane_id();
+    const unsigned mod9 = lane_id % 9;
+
+    unsigned index_offset = mod9 >> 2;
+    bool set_flag = mod9 == 0 || mod9 == 4;
+
+    if (set_flag) {
+        frag.x[index_offset] += alpha;
+        frag.x[index_offset + 6] += alpha;
+    }
+}
+
+
+
 template <class T>
 __device__ inline void
 add_eye(nvcuda::wmma::fragment<nvcuda::wmma::accumulator, 16, 16, 16, T> &frag,
